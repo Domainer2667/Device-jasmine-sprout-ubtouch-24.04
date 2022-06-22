@@ -60,6 +60,8 @@ fi
 
 cp -av overlay/* "${TMP}/"
 "$SCRIPT/build-tarball-mainline.sh" jasmine_sprout "${OUT}" "${TMP}"
+# create device tarball for https://wiki.debian.org/UsrMerge rootfs
+"$SCRIPT/build-tarball-mainline.sh" "${deviceinfo_codename}" "${OUT}" "${TMP}" "true"
 
 rm -r "${TMP}"
 rm -r "${TMPDOWN}"
