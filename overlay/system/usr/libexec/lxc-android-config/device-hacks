@@ -15,8 +15,23 @@ if [ -n "$fake_batt_capacity" ]; then
     echo "$fake_batt_capacity" > /sys/class/power_supply/battery/capacity
 fi
 
-# Set fpsensor property
+# Set fpsensor property and permissions
 fpsensor=$(getprop ro.boot.fpsensor)
 if [ -n "$fpsensor" ]; then
     setprop vendor.boot.fpsensor "$fpsensor"
 fi
+
+if [ -e /dev/goodix_fp ]; then
+    chmod 0666 /dev/goodix_fp
+    chown system:system /dev/goodix_fp
+fi
+if [ -e /dev/fpc1020 ]; then
+    chmod 0666 /dev/fpc1020
+    chown system:system /dev/fpc1020
+fi
+
+# Ensure Goodix QSEE firmware is accessible inside Android container
+if [ -d /android/vendor/firmware ] && [ -d /var/lib/lxc/android/rootfs/vendor/firmware_mnt/image ]; then
+    mount --bind /android/vendor/firmware /var/lib/lxc/android/rootfs/vendor/firmware_mnt/image 2>/dev/null || true
+fi
+
