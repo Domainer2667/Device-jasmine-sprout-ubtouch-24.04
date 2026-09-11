@@ -43,3 +43,8 @@ if [ -n "$FW_SRC" ] && [ -d /var/lib/lxc/android/rootfs/vendor/firmware_mnt/imag
     # Restart vendor.fps_hal to initialize with TrustZone firmware
     lxc-attach -n android -- /system/bin/setprop ctl.restart vendor.fps_hal 2>/dev/null || true
 fi
+
+# Prevent kernel panic on subsystem crash (set SSR to RELATED)
+for s in /sys/bus/msm_subsys/devices/subsys*/restart_level; do
+    [ -f "$s" ] && echo RELATED > "$s"
+done
