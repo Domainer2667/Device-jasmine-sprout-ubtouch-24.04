@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Set permissions for DT2W (Double Tap To Wake)
+if [ -e /proc/nvt_wake_gesture ]; then
+    chmod 0660 /proc/nvt_wake_gesture
+    chown system:system /proc/nvt_wake_gesture
+fi
+
+# Enable Wi-Fi display
+setprop ubuntu.widi.supported 1
+
+# BMS fake battery capacity if specified
+fake_batt_capacity=$(getprop persist.vendor.bms.fake_batt_capacity)
+if [ -n "$fake_batt_capacity" ]; then
+    echo "$fake_batt_capacity" > /sys/class/power_supply/battery/capacity
+fi
+
+# Set fpsensor property
+fpsensor=$(getprop ro.boot.fpsensor)
+if [ -n "$fpsensor" ]; then
+    setprop vendor.boot.fpsensor "$fpsensor"
+fi
