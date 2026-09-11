@@ -31,7 +31,15 @@ if [ -e /dev/fpc1020 ]; then
 fi
 
 # Ensure Goodix QSEE firmware is accessible inside Android container
-if [ -d /android/vendor/firmware ] && [ -d /var/lib/lxc/android/rootfs/vendor/firmware_mnt/image ]; then
-    mount --bind /android/vendor/firmware /var/lib/lxc/android/rootfs/vendor/firmware_mnt/image 2>/dev/null || true
+FW_SRC=""
+if [ -f /firmware/image/goodixfp.mdt ]; then
+    FW_SRC="/firmware/image"
+elif [ -f /android/vendor/firmware/goodixfp.mdt ]; then
+    FW_SRC="/android/vendor/firmware"
 fi
 
+if [ -n "$FW_SRC" ] && [ -d /var/lib/lxc/android/rootfs/vendor/firmware_mnt/image ]; then
+    mount --bind "$FW_SRC" /var/lib/lxc/android/rootfs/vendor/firmware_mnt/image 2>/dev/null || true
+    # Restart vendor.fps_hal to initialize with TrustZone firmware
+    lxc-attach -n android -- /system/bin/setprop ctl.restart vendor.fps_hal 2>/dev/null || true
+fi
