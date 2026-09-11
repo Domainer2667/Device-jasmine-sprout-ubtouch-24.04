@@ -36,6 +36,14 @@ for dir in . ./out ./ubuntu-touch-mi-a2-images ../ubuntu-touch-mi-a2-images; do
     fi
     if [ -f "$dir/ubuntu.img" ] && [ -z "$UBUNTU_IMG" ]; then
         UBUNTU_IMG="$dir/ubuntu.img"
+    elif [ -f "$dir/ubuntu.img.xz" ] && [ -z "$UBUNTU_IMG" ]; then
+        echo -e "${YELLOW}Decompressing $dir/ubuntu.img.xz...${NC}"
+        xz -d -k "$dir/ubuntu.img.xz" 2>/dev/null || unxz -k "$dir/ubuntu.img.xz"
+        UBUNTU_IMG="$dir/ubuntu.img"
+    elif [ -f "$dir/ubuntu.img.zst" ] && [ -z "$UBUNTU_IMG" ]; then
+        echo -e "${YELLOW}Decompressing $dir/ubuntu.img.zst...${NC}"
+        zstd -d "$dir/ubuntu.img.zst" -o "$dir/ubuntu.img"
+        UBUNTU_IMG="$dir/ubuntu.img"
     fi
 done
 

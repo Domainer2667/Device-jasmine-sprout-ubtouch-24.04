@@ -3,6 +3,7 @@ name: Build Ubuntu Touch (Mi A2)
 on:
   push:
     branches: [ master, main ]
+    tags: [ 'v*' ]
   workflow_dispatch:
     inputs:
       ut_release:
@@ -14,6 +15,13 @@ on:
           - '24.04-2.x'
           - '24.04-1.x'
           - 'focal'
+      create_release:
+        description: 'Publish as GitHub Release'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -68,3 +76,25 @@ jobs:
             out/ubuntu.img
             out/device_*.tar.xz
             out/*.zst
+
+      - name: Compress Rootfs for GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.create_release == 'true'
+        run: |
+          echo "Compressing ubuntu.img with xz for GitHub Release distribution..."
+          xz -T0 -6 out/ubuntu.img
+
+      - name: Publish to GitHub Releases
+        if: startsWith(github.ref, 'refs/tags/') || github.event.inputs.create_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Ubuntu Touch 24.04 Noble (Xiaomi Mi A2) - ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            out/*boot.img
+            out/ubuntu.img.xz
+            out/device_*.tar.xz
+            flash.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
