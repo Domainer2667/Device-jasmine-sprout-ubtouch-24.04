@@ -34,7 +34,7 @@ jobs:
 
       - name: Clone generic adaptation build tools
         run: |
-          git clone -b main https://gitlab.com/ubports/porting/community-ports/halium-generic-adaptation-build-tools.git build
+          [ -d build ] || git clone -b main https://gitlab.com/ubports/community-ports/halium-generic-adaptation-build-tools.git build
 
       - name: Set Ubuntu Touch Release
         run: |
@@ -58,6 +58,7 @@ jobs:
           fi
 
       - name: Upload Flashable Artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ubuntu-touch-mi-a2-images
