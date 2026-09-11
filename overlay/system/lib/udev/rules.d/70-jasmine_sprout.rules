@@ -282,3 +282,7 @@ ACTION=="add", KERNEL=="qg_battery", OWNER="system", GROUP="system", MODE="0660"
 # Fingerprint sensors
 ACTION=="add", KERNEL=="goodix_fp", OWNER="system", GROUP="system", MODE="0666"
 ACTION=="add", KERNEL=="fpc1020", OWNER="system", GROUP="system", MODE="0666"
+
+# Waydroid / Anbox secondary binder nodes
+ACTION=="add", KERNEL=="anbox-*", OWNER="root", GROUP="root", MODE="0666"
+
