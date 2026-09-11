@@ -40,9 +40,10 @@ Because the physical `system` partition on the Mi A2 is limited to 3.0 GB, Ubunt
 - Android platform tools (`fastboot` and `adb`) installed on your PC.
 
 ### 2. Download Images
-From the [Releases or CI Actions](../../actions), download the latest `ubuntu-touch-mi-a2-images` artifact containing:
-- `boot.img` (or `boot-loopmount.img`)
-- `ubuntu.img` (the rootfs)
+Download the latest flashable images directly from the **[Releases Page](https://github.com/Domainer2667/Device-jasmine-sprout-ubtouch-24.04/releases)** (or from the latest [CI Actions Artifacts](https://github.com/Domainer2667/Device-jasmine-sprout-ubtouch-24.04/actions)):
+- `boot.img`
+- `ubuntu.img.xz` (or `ubuntu.img`)
+- `flash.sh`
 
 ### 3. Automated Flashing
 Place the images in the directory and run:
