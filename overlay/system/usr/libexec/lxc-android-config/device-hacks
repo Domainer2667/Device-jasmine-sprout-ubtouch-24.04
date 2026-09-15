@@ -93,8 +93,8 @@ if [ -d /var/lib/waydroid/overlay_rw/vendor ]; then
     fi
 
     if [ -f /var/lib/waydroid/waydroid.prop ]; then
-        sed -i 's/ro.hardware.egl=.*/ro.hardware.egl=adreno/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
-        sed -i 's/ro.opengles.version=.*/ro.opengles.version=196610/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
+        sed -i 's/ro.hardware.egl=.*/ro.hardware.egl=swiftshader/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
+        sed -i 's/ro.opengles.version=.*/ro.opengles.version=196609/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
         sed -i 's/ro.hardware.gralloc=.*/ro.hardware.gralloc=default/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
         sed -i 's/persist.waydroid.multi_windows=.*/persist.waydroid.multi_windows=false/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
         grep -q 'persist.waydroid.multi_windows' /var/lib/waydroid/waydroid.prop || echo 'persist.waydroid.multi_windows=false' >> /var/lib/waydroid/waydroid.prop
