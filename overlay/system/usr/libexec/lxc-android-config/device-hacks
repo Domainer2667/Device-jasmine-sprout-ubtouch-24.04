@@ -84,5 +84,3 @@ if [ -d /var/lib/waydroid ]; then
         sed -i '/lxc.cgroup2.cpuset.cpus/d' /var/lib/waydroid/lxc/waydroid/config 2>/dev/null || true
         echo "lxc.cgroup2.cpuset.cpus = 0-5" >> /var/lib/waydroid/lxc/waydroid/config
     fi
-fi
-
