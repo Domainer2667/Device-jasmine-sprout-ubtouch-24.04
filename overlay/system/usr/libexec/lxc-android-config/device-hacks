@@ -67,22 +67,37 @@ chmod 0755 /sys/fs/cgroup 2>/dev/null || true
 
 # Configure Waydroid properties for rock-solid stability on Ubuntu Touch
 if [ -d /var/lib/waydroid ]; then
-        sed -i 's/ro.hardware.egl=.*/ro.hardware.egl=swiftshader/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
-        sed -i 's/ro.opengles.version=.*/ro.opengles.version=196609/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
-        sed -i 's/ro.hardware.gralloc=.*/ro.hardware.gralloc=default/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
-        sed -i 's/persist.waydroid.multi_windows=.*/persist.waydroid.multi_windows=false/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
-        grep -q 'persist.waydroid.multi_windows' /var/lib/waydroid/waydroid.prop || echo 'persist.waydroid.multi_windows=false' >> /var/lib/waydroid/waydroid.prop
-        grep -q 'dalvik.vm.dex2oat-filter' /var/lib/waydroid/waydroid.prop || echo 'dalvik.vm.dex2oat-filter=verify' >> /var/lib/waydroid/waydroid.prop
-        grep -q 'ro.nnapi.disabled' /var/lib/waydroid/waydroid.prop || echo 'ro.nnapi.disabled=1' >> /var/lib/waydroid/waydroid.prop
-        grep -q 'ro.sys.fw.bg_apps_limit' /var/lib/waydroid/waydroid.prop || echo 'ro.sys.fw.bg_apps_limit=10' >> /var/lib/waydroid/waydroid.prop
-        grep -q 'dalvik.vm.heapgrowthlimit' /var/lib/waydroid/waydroid.prop || echo 'dalvik.vm.heapgrowthlimit=192m' >> /var/lib/waydroid/waydroid.prop
-        grep -q 'dalvik.vm.heapsize' /var/lib/waydroid/waydroid.prop || echo 'dalvik.vm.heapsize=384m' >> /var/lib/waydroid/waydroid.prop
-    fi
+    sed -i 's/ro.hardware.egl=.*/ro.hardware.egl=swiftshader/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
+    sed -i 's/ro.opengles.version=.*/ro.opengles.version=196609/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
+    sed -i 's/ro.hardware.gralloc=.*/ro.hardware.gralloc=default/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
+    sed -i 's/persist.waydroid.multi_windows=.*/persist.waydroid.multi_windows=false/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
+    grep -q 'persist.waydroid.multi_windows' /var/lib/waydroid/waydroid.prop || echo 'persist.waydroid.multi_windows=false' >> /var/lib/waydroid/waydroid.prop
+    grep -q 'dalvik.vm.dex2oat-filter' /var/lib/waydroid/waydroid.prop || echo 'dalvik.vm.dex2oat-filter=verify' >> /var/lib/waydroid/waydroid.prop
+    grep -q 'ro.nnapi.disabled' /var/lib/waydroid/waydroid.prop || echo 'ro.nnapi.disabled=1' >> /var/lib/waydroid/waydroid.prop
+    grep -q 'ro.sys.fw.bg_apps_limit' /var/lib/waydroid/waydroid.prop || echo 'ro.sys.fw.bg_apps_limit=10' >> /var/lib/waydroid/waydroid.prop
+    grep -q 'dalvik.vm.heapgrowthlimit' /var/lib/waydroid/waydroid.prop || echo 'dalvik.vm.heapgrowthlimit=192m' >> /var/lib/waydroid/waydroid.prop
+    grep -q 'dalvik.vm.heapsize' /var/lib/waydroid/waydroid.prop || echo 'dalvik.vm.heapsize=384m' >> /var/lib/waydroid/waydroid.prop
 
-    # Reserve CPU cores 6-7 for Lomiri compositor and prevent container reboots
-    if [ -f /var/lib/waydroid/lxc/waydroid/config ]; then
-        sed -i '/lxc.cgroup2.cpuset.cpus/d' /var/lib/waydroid/lxc/waydroid/config 2>/dev/null || true
-        echo "lxc.cgroup2.cpuset.cpus = 0-5" >> /var/lib/waydroid/lxc/waydroid/config
-        sed -i '/lxc.cap.drop/d' /var/lib/waydroid/lxc/waydroid/config 2>/dev/null || true
-        echo "lxc.cap.drop = sys_boot sys_rawio" >> /var/lib/waydroid/lxc/waydroid/config
+    # Ensure waydroid.cfg defaults match swiftshader & default gralloc
+    if [ -f /var/lib/waydroid/waydroid.cfg ]; then
+        sed -i 's/ro.hardware.gralloc = .*/ro.hardware.gralloc = default/g' /var/lib/waydroid/waydroid.cfg 2>/dev/null || true
+        sed -i 's/ro.hardware.egl = .*/ro.hardware.egl = swiftshader/g' /var/lib/waydroid/waydroid.cfg 2>/dev/null || true
+        sed -i 's/ro.opengles.version = .*/ro.opengles.version = 196609/g' /var/lib/waydroid/waydroid.cfg 2>/dev/null || true
     fi
+fi
+
+# Patch waydroid template config to prevent broken product bind mount
+if [ -f /usr/lib/waydroid/data/configs/config_base ]; then
+    sed -i '/product none bind/d' /usr/lib/waydroid/data/configs/config_base 2>/dev/null || true
+    grep -q 'lxc.cgroup2.cpuset.cpus' /usr/lib/waydroid/data/configs/config_base || echo "lxc.cgroup2.cpuset.cpus = 0-5" >> /usr/lib/waydroid/data/configs/config_base
+    grep -q 'lxc.cap.drop' /usr/lib/waydroid/data/configs/config_base || echo "lxc.cap.drop = sys_boot sys_rawio" >> /usr/lib/waydroid/data/configs/config_base
+fi
+
+# Reserve CPU cores 6-7 for Lomiri compositor and prevent container reboots
+if [ -f /var/lib/waydroid/lxc/waydroid/config ]; then
+    sed -i '/product none bind/d' /var/lib/waydroid/lxc/waydroid/config 2>/dev/null || true
+    sed -i '/lxc.cgroup2.cpuset.cpus/d' /var/lib/waydroid/lxc/waydroid/config 2>/dev/null || true
+    echo "lxc.cgroup2.cpuset.cpus = 0-5" >> /var/lib/waydroid/lxc/waydroid/config
+    sed -i '/lxc.cap.drop/d' /var/lib/waydroid/lxc/waydroid/config 2>/dev/null || true
+    echo "lxc.cap.drop = sys_boot sys_rawio" >> /var/lib/waydroid/lxc/waydroid/config
+fi
