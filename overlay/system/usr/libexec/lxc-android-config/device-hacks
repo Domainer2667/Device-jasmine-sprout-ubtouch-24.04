@@ -65,34 +65,8 @@ echo "1 1 1 7" > /proc/sys/kernel/printk 2>/dev/null || true
 # Fix cgroup directory permissions for systemd user services (app launching)
 chmod 0755 /sys/fs/cgroup 2>/dev/null || true
 
-# Ensure Waydroid uses Adreno hardware acceleration & Qualcomm gralloc
-if [ -d /var/lib/waydroid/overlay_rw/vendor ]; then
-    mkdir -p /var/lib/waydroid/overlay_rw/vendor/lib64/egl /var/lib/waydroid/overlay_rw/vendor/lib/egl 2>/dev/null || true
-    mkdir -p /var/lib/waydroid/overlay_rw/vendor/lib64/hw /var/lib/waydroid/overlay_rw/vendor/lib/hw 2>/dev/null || true
-    
-    # Copy Qualcomm Adreno drivers if not present
-    if [ ! -f /var/lib/waydroid/overlay_rw/vendor/lib64/egl/libEGL_adreno.so ]; then
-        cp -p /vendor/lib64/egl/* /var/lib/waydroid/overlay_rw/vendor/lib64/egl/ 2>/dev/null || true
-        cp -p /vendor/lib/egl/* /var/lib/waydroid/overlay_rw/vendor/lib/egl/ 2>/dev/null || true
-        for lib in libadreno_utils.so libgsl.so libllvm-glnext.so libllvm-qcom.so libc2d30_bltlib.so libc2dcolorconvert.so librs_adreno.so libRSDriver_adreno.so; do
-            [ -f /vendor/lib64/$lib ] && cp -p /vendor/lib64/$lib /var/lib/waydroid/overlay_rw/vendor/lib64/ 2>/dev/null || true
-            [ -f /vendor/lib/$lib ] && cp -p /vendor/lib/$lib /var/lib/waydroid/overlay_rw/vendor/lib/ 2>/dev/null || true
-        done
-        ln -sf egl/libEGL_adreno.so /var/lib/waydroid/overlay_rw/vendor/lib64/libEGL_adreno.so 2>/dev/null || true
-        ln -sf egl/libEGL_adreno.so /var/lib/waydroid/overlay_rw/vendor/lib/libEGL_adreno.so 2>/dev/null || true
-    fi
-
-    # Always ensure Qualcomm hardware gralloc and display modules are installed in Waydroid
-    if [ ! -f /var/lib/waydroid/overlay_rw/vendor/lib64/hw/gralloc.sdm660.so ]; then
-        cp -fp /vendor/lib64/hw/gralloc* /var/lib/waydroid/overlay_rw/vendor/lib64/hw/ 2>/dev/null || true
-        cp -fp /vendor/lib/hw/gralloc* /var/lib/waydroid/overlay_rw/vendor/lib/hw/ 2>/dev/null || true
-        for lib in libgrallocutils.so libqdMetaData.so libqdi.so libqdutils.so libqdma.so libqdp.so; do
-            [ -f /vendor/lib64/$lib ] && cp -fp /vendor/lib64/$lib /var/lib/waydroid/overlay_rw/vendor/lib64/ 2>/dev/null || true
-            [ -f /vendor/lib/$lib ] && cp -fp /vendor/lib/$lib /var/lib/waydroid/overlay_rw/vendor/lib/ 2>/dev/null || true
-        done
-    fi
-
-    if [ -f /var/lib/waydroid/waydroid.prop ]; then
+# Configure Waydroid properties for rock-solid stability on Ubuntu Touch
+if [ -d /var/lib/waydroid ]; then
         sed -i 's/ro.hardware.egl=.*/ro.hardware.egl=swiftshader/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
         sed -i 's/ro.opengles.version=.*/ro.opengles.version=196609/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
         sed -i 's/ro.hardware.gralloc=.*/ro.hardware.gralloc=default/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
