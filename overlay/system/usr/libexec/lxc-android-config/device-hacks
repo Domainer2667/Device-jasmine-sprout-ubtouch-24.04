@@ -96,9 +96,21 @@ if [ -d /var/lib/waydroid ]; then
         sed -i 's/ro.opengles.version = .*/ro.opengles.version = 196610/g' /var/lib/waydroid/waydroid.cfg 2>/dev/null || true
     fi
 
-    # Tune CPU governor for performance
+    # Tune CPU governor – prefer schedutil (4.7+), fallback to interactive (4.4 SDM660)
     for cpu_gov in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-        [ -f "$cpu_gov" ] && echo "schedutil" > "$cpu_gov" 2>/dev/null || true
+        [ -f "$cpu_gov" ] || continue
+        if ! echo "schedutil" > "$cpu_gov" 2>/dev/null; then
+            echo "interactive" > "$cpu_gov" 2>/dev/null || true
+        fi
+    done
+    # Tune interactive governor min_sample_time to reduce CPU spinning
+    for cpu_mstime in /sys/devices/system/cpu/cpu*/cpufreq/interactive/min_sample_time; do
+        [ -f "$cpu_mstime" ] && echo 40000 > "$cpu_mstime" 2>/dev/null || true
+    done
+    # Tune interactive governor hispeed_freq to avoid always running at peak
+    for cpu_hi in /sys/devices/system/cpu/cpu0/cpufreq/interactive/hispeed_freq \
+                  /sys/devices/system/cpu/cpu4/cpufreq/interactive/hispeed_freq; do
+        [ -f "$cpu_hi" ] && echo 1036800 > "$cpu_hi" 2>/dev/null || true
     done
 fi
 
