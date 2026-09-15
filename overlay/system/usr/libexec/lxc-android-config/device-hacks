@@ -89,15 +89,14 @@ fi
 # Patch waydroid template config to prevent broken product bind mount
 if [ -f /usr/lib/waydroid/data/configs/config_base ]; then
     sed -i '/product none bind/d' /usr/lib/waydroid/data/configs/config_base 2>/dev/null || true
+    sed -i '/lxc.cap.drop/d' /usr/lib/waydroid/data/configs/config_base 2>/dev/null || true
     grep -q 'lxc.cgroup2.cpuset.cpus' /usr/lib/waydroid/data/configs/config_base || echo "lxc.cgroup2.cpuset.cpus = 0-5" >> /usr/lib/waydroid/data/configs/config_base
-    grep -q 'lxc.cap.drop' /usr/lib/waydroid/data/configs/config_base || echo "lxc.cap.drop = sys_boot sys_rawio" >> /usr/lib/waydroid/data/configs/config_base
 fi
 
-# Reserve CPU cores 6-7 for Lomiri compositor and prevent container reboots
+# Reserve CPU cores 6-7 for Lomiri compositor
 if [ -f /var/lib/waydroid/lxc/waydroid/config ]; then
     sed -i '/product none bind/d' /var/lib/waydroid/lxc/waydroid/config 2>/dev/null || true
+    sed -i '/lxc.cap.drop/d' /var/lib/waydroid/lxc/waydroid/config 2>/dev/null || true
     sed -i '/lxc.cgroup2.cpuset.cpus/d' /var/lib/waydroid/lxc/waydroid/config 2>/dev/null || true
     echo "lxc.cgroup2.cpuset.cpus = 0-5" >> /var/lib/waydroid/lxc/waydroid/config
-    sed -i '/lxc.cap.drop/d' /var/lib/waydroid/lxc/waydroid/config 2>/dev/null || true
-    echo "lxc.cap.drop = sys_boot sys_rawio" >> /var/lib/waydroid/lxc/waydroid/config
 fi
