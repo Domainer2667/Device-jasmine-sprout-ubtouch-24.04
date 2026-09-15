@@ -1,0 +1,4 @@
+# AppArmor aliases for rootfs-overlay upper and lower mounts
+alias / -> /rootfs-overlay/,
+alias / -> /tmpmnt/rootfs-overlay/,
+alias / -> /halium-system/,

@@ -31,6 +31,17 @@ if [ -e /dev/fpc1020 ]; then
 fi
 
 
+# Ensure Goodix fingerprint firmware is available in /system/etc/firmware
+if [ -f /vendor/firmware/goodixfp.mdt ] || [ -f /android/vendor/firmware/goodixfp.mdt ]; then
+    mkdir -p /run/system-etc-overlay/upper /run/system-etc-overlay/work
+    mount -t overlay overlay -o lowerdir=/android/system/etc,upperdir=/run/system-etc-overlay/upper,workdir=/run/system-etc-overlay/work /android/system/etc 2>/dev/null || true
+    mkdir -p /android/system/etc/firmware
+    src_dir="/vendor/firmware"
+    [ ! -f "$src_dir/goodixfp.mdt" ] && src_dir="/android/vendor/firmware"
+    cp -n "$src_dir"/goodixfp.* /android/system/etc/firmware/ 2>/dev/null || true
+    chmod 0644 /android/system/etc/firmware/* 2>/dev/null || true
+fi
+
 # Mount persist partition where expected by Android HALs and daemons
 if [ -d /mnt/vendor/persist ] && [ ! -e /persist/alarm ]; then
     mount --bind /mnt/vendor/persist /persist 2>/dev/null || true
@@ -43,3 +54,61 @@ fi
 for s in /sys/bus/msm_subsys/devices/subsys*/restart_level; do
     [ -f "$s" ] && echo RELATED > "$s"
 done
+
+# Prevent kernel reboot on oops / soft lockups
+echo 0 > /proc/sys/kernel/panic_on_oops 2>/dev/null || true
+echo 0 > /proc/sys/kernel/panic 2>/dev/null || true
+
+# Mute UART serial console flood (prevents MSM watchdog bite on binder printk burst)
+echo "1 1 1 7" > /proc/sys/kernel/printk 2>/dev/null || true
+
+# Fix cgroup directory permissions for systemd user services (app launching)
+chmod 0755 /sys/fs/cgroup 2>/dev/null || true
+
+# Ensure Waydroid uses Adreno hardware acceleration & Qualcomm gralloc
+if [ -d /var/lib/waydroid/overlay_rw/vendor ]; then
+    mkdir -p /var/lib/waydroid/overlay_rw/vendor/lib64/egl /var/lib/waydroid/overlay_rw/vendor/lib/egl 2>/dev/null || true
+    mkdir -p /var/lib/waydroid/overlay_rw/vendor/lib64/hw /var/lib/waydroid/overlay_rw/vendor/lib/hw 2>/dev/null || true
+    
+    # Copy Qualcomm Adreno drivers if not present
+    if [ ! -f /var/lib/waydroid/overlay_rw/vendor/lib64/egl/libEGL_adreno.so ]; then
+        cp -p /vendor/lib64/egl/* /var/lib/waydroid/overlay_rw/vendor/lib64/egl/ 2>/dev/null || true
+        cp -p /vendor/lib/egl/* /var/lib/waydroid/overlay_rw/vendor/lib/egl/ 2>/dev/null || true
+        for lib in libadreno_utils.so libgsl.so libllvm-glnext.so libllvm-qcom.so libc2d30_bltlib.so libc2dcolorconvert.so librs_adreno.so libRSDriver_adreno.so; do
+            [ -f /vendor/lib64/$lib ] && cp -p /vendor/lib64/$lib /var/lib/waydroid/overlay_rw/vendor/lib64/ 2>/dev/null || true
+            [ -f /vendor/lib/$lib ] && cp -p /vendor/lib/$lib /var/lib/waydroid/overlay_rw/vendor/lib/ 2>/dev/null || true
+        done
+        ln -sf egl/libEGL_adreno.so /var/lib/waydroid/overlay_rw/vendor/lib64/libEGL_adreno.so 2>/dev/null || true
+        ln -sf egl/libEGL_adreno.so /var/lib/waydroid/overlay_rw/vendor/lib/libEGL_adreno.so 2>/dev/null || true
+    fi
+
+    # Always ensure Qualcomm hardware gralloc and display modules are installed in Waydroid
+    if [ ! -f /var/lib/waydroid/overlay_rw/vendor/lib64/hw/gralloc.sdm660.so ]; then
+        cp -fp /vendor/lib64/hw/gralloc* /var/lib/waydroid/overlay_rw/vendor/lib64/hw/ 2>/dev/null || true
+        cp -fp /vendor/lib/hw/gralloc* /var/lib/waydroid/overlay_rw/vendor/lib/hw/ 2>/dev/null || true
+        for lib in libgrallocutils.so libqdMetaData.so libqdi.so libqdutils.so libqdma.so libqdp.so; do
+            [ -f /vendor/lib64/$lib ] && cp -fp /vendor/lib64/$lib /var/lib/waydroid/overlay_rw/vendor/lib64/ 2>/dev/null || true
+            [ -f /vendor/lib/$lib ] && cp -fp /vendor/lib/$lib /var/lib/waydroid/overlay_rw/vendor/lib/ 2>/dev/null || true
+        done
+    fi
+
+    if [ -f /var/lib/waydroid/waydroid.prop ]; then
+        sed -i 's/ro.hardware.egl=.*/ro.hardware.egl=adreno/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
+        sed -i 's/ro.opengles.version=.*/ro.opengles.version=196610/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
+        sed -i 's/ro.hardware.gralloc=.*/ro.hardware.gralloc=default/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
+        sed -i 's/persist.waydroid.multi_windows=.*/persist.waydroid.multi_windows=false/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
+        grep -q 'persist.waydroid.multi_windows' /var/lib/waydroid/waydroid.prop || echo 'persist.waydroid.multi_windows=false' >> /var/lib/waydroid/waydroid.prop
+        grep -q 'dalvik.vm.dex2oat-filter' /var/lib/waydroid/waydroid.prop || echo 'dalvik.vm.dex2oat-filter=verify' >> /var/lib/waydroid/waydroid.prop
+        grep -q 'ro.nnapi.disabled' /var/lib/waydroid/waydroid.prop || echo 'ro.nnapi.disabled=1' >> /var/lib/waydroid/waydroid.prop
+        grep -q 'ro.sys.fw.bg_apps_limit' /var/lib/waydroid/waydroid.prop || echo 'ro.sys.fw.bg_apps_limit=10' >> /var/lib/waydroid/waydroid.prop
+        grep -q 'dalvik.vm.heapgrowthlimit' /var/lib/waydroid/waydroid.prop || echo 'dalvik.vm.heapgrowthlimit=192m' >> /var/lib/waydroid/waydroid.prop
+        grep -q 'dalvik.vm.heapsize' /var/lib/waydroid/waydroid.prop || echo 'dalvik.vm.heapsize=384m' >> /var/lib/waydroid/waydroid.prop
+    fi
+
+    # Reserve CPU cores 6-7 for Lomiri compositor to prevent UI freezes
+    if [ -f /var/lib/waydroid/lxc/waydroid/config ]; then
+        sed -i '/lxc.cgroup2.cpuset.cpus/d' /var/lib/waydroid/lxc/waydroid/config 2>/dev/null || true
+        echo "lxc.cgroup2.cpuset.cpus = 0-5" >> /var/lib/waydroid/lxc/waydroid/config
+    fi
+fi
+
