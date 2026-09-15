@@ -67,16 +67,27 @@ chmod 0755 /sys/fs/cgroup 2>/dev/null || true
 
 # Configure Waydroid properties for rock-solid stability on Ubuntu Touch
 if [ -d /var/lib/waydroid ]; then
-    sed -i 's/ro.hardware.egl=.*/ro.hardware.egl=adreno/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
-    sed -i 's/ro.opengles.version=.*/ro.opengles.version=196610/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
-    sed -i 's/ro.hardware.gralloc=.*/ro.hardware.gralloc=default/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
-    sed -i 's/persist.waydroid.multi_windows=.*/persist.waydroid.multi_windows=false/g' /var/lib/waydroid/waydroid.prop 2>/dev/null || true
-    grep -q 'persist.waydroid.multi_windows' /var/lib/waydroid/waydroid.prop || echo 'persist.waydroid.multi_windows=false' >> /var/lib/waydroid/waydroid.prop
-    grep -q 'dalvik.vm.dex2oat-filter' /var/lib/waydroid/waydroid.prop || echo 'dalvik.vm.dex2oat-filter=verify' >> /var/lib/waydroid/waydroid.prop
-    grep -q 'ro.nnapi.disabled' /var/lib/waydroid/waydroid.prop || echo 'ro.nnapi.disabled=1' >> /var/lib/waydroid/waydroid.prop
-    grep -q 'ro.sys.fw.bg_apps_limit' /var/lib/waydroid/waydroid.prop || echo 'ro.sys.fw.bg_apps_limit=10' >> /var/lib/waydroid/waydroid.prop
-    grep -q 'dalvik.vm.heapgrowthlimit' /var/lib/waydroid/waydroid.prop || echo 'dalvik.vm.heapgrowthlimit=192m' >> /var/lib/waydroid/waydroid.prop
-    grep -q 'dalvik.vm.heapsize' /var/lib/waydroid/waydroid.prop || echo 'dalvik.vm.heapsize=384m' >> /var/lib/waydroid/waydroid.prop
+    # Helper function for idempotent prop setting using sed
+    waydroid_set_prop() {
+        local prop="$1"
+        local val="$2"
+        local prop_file="/var/lib/waydroid/waydroid.prop"
+        if grep -q "^${prop}=" "$prop_file"; then
+            sed -i "s/^${prop}=.*/${prop}=${val}/g" "$prop_file"
+        else
+            echo "${prop}=${val}" >> "$prop_file"
+        fi
+    }
+
+    waydroid_set_prop "ro.hardware.egl" "adreno"
+    waydroid_set_prop "ro.opengles.version" "196610"
+    waydroid_set_prop "ro.hardware.gralloc" "default"
+    waydroid_set_prop "persist.waydroid.multi_windows" "false"
+    waydroid_set_prop "dalvik.vm.dex2oat-filter" "verify"
+    waydroid_set_prop "ro.nnapi.disabled" "1"
+    waydroid_set_prop "ro.sys.fw.bg_apps_limit" "16"
+    waydroid_set_prop "dalvik.vm.heapgrowthlimit" "256m"
+    waydroid_set_prop "dalvik.vm.heapsize" "512m"
 
     # Ensure waydroid.cfg defaults match adreno & default gralloc
     if [ -f /var/lib/waydroid/waydroid.cfg ]; then
@@ -84,6 +95,11 @@ if [ -d /var/lib/waydroid ]; then
         sed -i 's/ro.hardware.egl = .*/ro.hardware.egl = adreno/g' /var/lib/waydroid/waydroid.cfg 2>/dev/null || true
         sed -i 's/ro.opengles.version = .*/ro.opengles.version = 196610/g' /var/lib/waydroid/waydroid.cfg 2>/dev/null || true
     fi
+
+    # Tune CPU governor for performance
+    for cpu_gov in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
+        [ -f "$cpu_gov" ] && echo "schedutil" > "$cpu_gov" 2>/dev/null || true
+    done
 fi
 
 # Patch waydroid template config to prevent broken product bind mount
