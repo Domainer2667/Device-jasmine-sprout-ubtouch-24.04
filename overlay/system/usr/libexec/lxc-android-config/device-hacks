@@ -79,8 +79,10 @@ if [ -d /var/lib/waydroid ]; then
         grep -q 'dalvik.vm.heapsize' /var/lib/waydroid/waydroid.prop || echo 'dalvik.vm.heapsize=384m' >> /var/lib/waydroid/waydroid.prop
     fi
 
-    # Reserve CPU cores 6-7 for Lomiri compositor to prevent UI freezes
+    # Reserve CPU cores 6-7 for Lomiri compositor and prevent container reboots
     if [ -f /var/lib/waydroid/lxc/waydroid/config ]; then
         sed -i '/lxc.cgroup2.cpuset.cpus/d' /var/lib/waydroid/lxc/waydroid/config 2>/dev/null || true
         echo "lxc.cgroup2.cpuset.cpus = 0-5" >> /var/lib/waydroid/lxc/waydroid/config
+        sed -i '/lxc.cap.drop/d' /var/lib/waydroid/lxc/waydroid/config 2>/dev/null || true
+        echo "lxc.cap.drop = sys_boot sys_rawio" >> /var/lib/waydroid/lxc/waydroid/config
     fi
